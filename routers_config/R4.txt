@@ -1,0 +1,126 @@
+!
+version 15.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname Router4
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+redundancy
+!
+!
+track 10 ip sla 2 reachability
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ no shutdown
+ description Link Primario para R2
+ ip address 10.1.24.2 255.255.255.252
+!
+interface Ethernet0/1
+ no shutdown
+ description Link Secundario para R3
+ ip address 10.1.34.2 255.255.255.252
+!
+interface Ethernet0/2
+ no shutdown
+ description Link para Host-2
+ ip address 192.168.2.1 255.255.255.0
+!
+interface Ethernet0/3
+ no shutdown
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip route 192.168.1.0 255.255.255.0 10.1.24.1 track 10
+ip route 10.1.12.1 255.255.255.255 10.1.24.1
+ip route 192.168.1.0 255.255.255.0 10.1.34.1 20
+ip route 192.168.3.0 255.255.255.0 10.1.24.1
+!
+ip sla 1
+ icmp-echo 10.1.12.1 source-ip 10.1.24.2
+ threshold 5
+ timeout 5
+ frequency 1
+ip sla schedule 1 life forever start-time now
+ip sla 2
+ icmp-echo 10.1.12.1 source-ip 10.1.24.2
+ threshold 150
+ timeout 150
+ frequency 1
+ip sla schedule 2 life forever start-time now
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end

@@ -1,0 +1,117 @@
+
+!
+version 15.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+redundancy
+!
+!
+!
+policy-map ESTRANGULAR_LINK
+ class class-default
+  shape average 500000
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ no shutdown
+ description Link par R1
+ ip address 10.1.12.2 255.255.255.252
+!
+interface Ethernet0/1
+ no shutdown
+ description Link para R4
+ ip address 10.1.24.1 255.255.255.252
+ service-policy output ESTRANGULAR_LINK
+!
+interface Ethernet0/2
+ no shutdown
+ description Link para Host-3 (Gerador de Ruido)
+ ip address 192.168.3.1 255.255.255.0
+!
+interface Ethernet0/3
+ no shutdown
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip route 192.168.1.0 255.255.255.0 10.1.12.1
+ip route 192.168.2.0 255.255.255.0 10.1.24.2
+!
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login
+ transport input none
+!
+!
+end
