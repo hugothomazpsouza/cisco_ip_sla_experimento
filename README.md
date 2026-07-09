@@ -50,7 +50,6 @@ All complete and ready-to-use router configurations (`R1.cfg`, `R2.cfg`, `R3.cfg
 
 ### ⚙️ Implemented Mechanics Summary (Example on R1)
 
-- **Carrier-Delay Zeroing (`carrier-delay msec 0`)**: Removes the debouncing delay from the virtual interface for instant detection of physical/virtual link failures.
 - **Probe Pinning (`ip route 10.1.24.2 255.255.255.255 10.1.12.2`)**: A `/32` host route that forces the ICMP test to pass exclusively through the primary link, preventing routing loops and flapping.
 - **Active Monitoring (`ip sla 1`)**: An ICMP probe is sent every 1 second (`frequency 1`), with degradation and failure tolerance calibrated at a 150 ms threshold (`timeout 150` / `threshold 150`).
 - **Floating Routes**: The main route is tied to the tracker (`track 10`) with a default Administrative Distance (AD) of 1, and the contingency route via R3 is configured with an AD of 20.
