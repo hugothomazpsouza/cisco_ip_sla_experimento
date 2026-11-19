@@ -1,8 +1,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
+# Estilo global limpo para artigo IEEE (coluna dupla)
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.size': 11,
+    'axes.labelsize': 13,
+    'xtick.labelsize': 11,
+    'ytick.labelsize': 11,
+    'legend.fontsize': 9.5,
+})
 
 # 1. Carregar Dados Reais do CSV
-df = pd.read_csv('experimento_cisco_ipsla_20261114_004930.csv')
+df = pd.read_csv('./experiment01/experimento_cisco_ipsla_20261114_004930.csv')
 df['timestamp'] = df['timestamp'].astype(float)
 
 # 2. Converter o Tempo Relativo para MILISSEGUNDOS (* 1000)
@@ -15,50 +26,68 @@ last_ok_before_ms = df[df['timestamp'] < nans['timestamp'].min()]['time_rel_ms']
 first_ok_after_ms = df[df['timestamp'] > nans['timestamp'].max()]['time_rel_ms'].min()
 downtime_ms = first_ok_after_ms - last_ok_before_ms
 
-# 4. Criação do Gráfico
-fig, ax = plt.subplots(figsize=(12, 6))
+# 4. Criação do Gráfico (proporção ideal para 1 coluna IEEE)
+fig, ax = plt.subplots(figsize=(6.0, 3.6))
 
-# Filtros para Pacotes Normais (<= 1000ms) e Degradados (> 1000ms)
 normal_mask = df['latencia_ms'] <= 1000
 degraded_mask = df['latencia_ms'] > 1000
 
-# Linha de fundo muito leve conectando os pontos
-ax.plot(df['time_rel_ms'], df['latencia_ms'], color='#2980b9', linewidth=0.8, alpha=0.4, zorder=1)
+# Linha de fundo suave
+ax.plot(df['time_rel_ms'], df['latencia_ms'], color='#5dade2', linewidth=0.9, alpha=0.45, zorder=1)
 
-# Plotando pacotes normais e degradados separadamente (conforme legenda)
-ax.scatter(df.loc[normal_mask, 'time_rel_ms'], df.loc[normal_mask, 'latencia_ms'], 
-           color='#4c4cff', s=20, label='Normal Packets (<= 1000ms)', zorder=2, alpha=0.9)
-ax.scatter(df.loc[degraded_mask, 'time_rel_ms'], df.loc[degraded_mask, 'latencia_ms'], 
-           color='#ffa500', s=25, label='Degraded Packets (> 1000ms)', zorder=3, alpha=1.0)
+# Pacotes normais e degradados
+ax.scatter(
+    df.loc[normal_mask, 'time_rel_ms'], df.loc[normal_mask, 'latencia_ms'],
+    color='#3b5bdb', s=18, label=r'Normal ($\leq 1000$ ms)', zorder=2, alpha=0.85
+)
+ax.scatter(
+    df.loc[degraded_mask, 'time_rel_ms'], df.loc[degraded_mask, 'latencia_ms'],
+    color='#f08c00', s=26, label=r'Degraded ($> 1000$ ms)', zorder=3
+)
 
-# Linha Horizontal de Threshold (1 segundo / 1000 ms)
-ax.axhline(y=1000, color='red', linestyle='--', linewidth=2.5, label='Threshold (1000 ms)', zorder=4)
+# Linha horizontal de threshold
+ax.axhline(y=1000, color='#e03131', linestyle='--', linewidth=1.6, label='Threshold (1000 ms)', zorder=4)
 
-# Destaque Visual (Downtime) preenchido
-ax.axvspan(last_ok_before_ms, first_ok_after_ms, color='#e74c3c', alpha=0.15)
+# Faixa de indisponibilidade (downtime) + linhas de início e convergência
+ax.axvspan(
+    last_ok_before_ms, first_ok_after_ms,
+    color='#e03131', alpha=0.14,
+    label=f'Outage / Failover ({int(downtime_ms)} ms)', zorder=0
+)
+ax.axvline(x=last_ok_before_ms, color='#e67700', linestyle='--', linewidth=1.4, zorder=4)
+ax.axvline(x=first_ok_after_ms, color='#2b8a3e', linestyle='-', linewidth=1.6, zorder=4)
 
-# Linhas Verticais de Demarcação 
-ax.axvline(x=last_ok_before_ms, color='grey', linestyle=':', linewidth=2.5, label='Congestion Start (Approx)')
-ax.axvline(x=last_ok_before_ms, color='orange', linestyle='--', linewidth=2, label='Threshold Detection')
-ax.axvline(x=first_ok_after_ms, color='green', linestyle='-', linewidth=2.5, label=f'Failover / Convergence (+{int(downtime_ms)}ms)')
-
-# Colocando APENAS os tempos exatos nas linhas
-ax.text(last_ok_before_ms - 500, ax.get_ylim()[1] * 0.9, f'{int(last_ok_before_ms)} ms', color='orange', ha='right', fontweight='bold', fontsize=12)
-ax.text(first_ok_after_ms + 500, ax.get_ylim()[1] * 0.9, f'{int(first_ok_after_ms)} ms', color='green', ha='left', fontweight='bold', fontsize=12)
-
-# Formatação Exata dos Eixos
-ax.set_title('Graph 01: Latency Behavior in Cisco IP SLA Environment', fontsize=16, fontweight='bold', pad=15)
-ax.set_xlabel('Relative Time (milliseconds)', fontsize=14, fontweight='bold')
-ax.set_ylabel('Latency (ms)', fontsize=14, fontweight='bold')
-ax.grid(True, linestyle=':', alpha=0.7)
-
-# Legenda - No canto superior direito
-ax.legend(loc='upper right', fontsize=11)
-
-# Limites de visualização
-ax.set_ylim(-50, df['latencia_ms'].max() * 1.3) 
+# Limites dos eixos (definidos ANTES das anotações de texto)
+y_max = df['latencia_ms'].max() * 1.25
+ax.set_ylim(-60, y_max)
 ax.set_xlim(-1000, df['time_rel_ms'].max() + 1000)
 
+# Limita a quantidade de ticks no eixo X para não encavalar os valores em ms
+ax.xaxis.set_major_locator(MaxNLocator(nbins=5, integer=True))
+
+# Anotações limpas dos instantes exatos em ms
+ax.text(
+    last_ok_before_ms - 450, y_max * 0.86, f'{int(last_ok_before_ms)} ms',
+    color='#d9480f', ha='right', va='center', fontweight='bold', fontsize=8.5
+)
+ax.text(
+    first_ok_after_ms + 450, y_max * 0.86, f'{int(first_ok_after_ms)} ms',
+    color='#2b8a3e', ha='left', va='center', fontweight='bold', fontsize=8.5
+)
+
+# Rótulos dos eixos em ms (sem título interno)
+ax.set_xlabel('Relative Time (ms)', fontweight='bold')
+ax.set_ylabel('Latency (ms)', fontweight='bold')
+
+# Estética clean: sem bordas superior/direita e grade discreta
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.grid(True, linestyle='--', linewidth=0.6, alpha=0.35)
+
+# Legenda limpa no canto superior direito
+ax.legend(loc='upper right', frameon=True, framealpha=0.92, edgecolor='#dee2e6')
+
 plt.tight_layout()
-plt.savefig('./experiment01/graphic_plot_latency_failover.png', dpi=300)
-plt.show() 
+plt.savefig('graphic_plot_latency_failover.png', dpi=300, bbox_inches='tight')
+plt.savefig('graphic_plot_latency_failover.pdf', bbox_inches='tight')
+plt.show()
